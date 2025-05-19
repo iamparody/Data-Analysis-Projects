@@ -1,45 +1,38 @@
-WITH savings_customers AS (
-    SELECT DISTINCT owner_id
-    FROM plans_plan
-    WHERE COALESCE(is_fixed_investment, 0) = 0 
-      AND COALESCE(is_managed_portfolio, 0) = 0
-      AND amount > 0
+WITH savers AS (
+    SELECT 
+        ss.owner_id AS owner_id,
+        COUNT(ss.id) AS savers_saver,
+        SUM(ss.amount) AS savings
+    FROM adashi_staging.savings_savingsaccount ss 
+    WHERE ss.amount > 0
+    GROUP BY ss.owner_id
 ),
-investment_customers AS (
-    SELECT DISTINCT owner_id
-    FROM plans_plan
-    WHERE (COALESCE(is_fixed_investment, 0) = 1 
-       OR COALESCE(is_managed_portfolio, 0) = 1)
-       AND amount > 0
+investors AS (
+    SELECT 
+        pp.owner_id AS owner_id,
+        COUNT(pp.id) AS investors_invest,
+        SUM(pp.amount) AS investments
+    FROM adashi_staging.plans_plan pp 
+    WHERE pp.amount > 0
+    GROUP BY pp.owner_id
 ),
-qualified_customers AS (
-    SELECT s.owner_id
-    FROM savings_customers s
-    INNER JOIN investment_customers i ON s.owner_id = i.owner_id
+cust_names AS (
+    SELECT 
+        uc.id AS owner_id,
+        CONCAT(uc.first_name, ' ', uc.last_name) AS name
+    FROM adashi_staging.users_customuser uc
 )
 SELECT 
-    u.id AS owner_id,
-    CONCAT(u.first_name, ' ', u.last_name) AS name,
-    -- Count of funded savings plans
-    (SELECT COUNT(DISTINCT p.id)
-     FROM plans_plan p
-     WHERE p.owner_id = u.id
-       AND COALESCE(p.is_fixed_investment, 0) = 0 
-       AND COALESCE(p.is_managed_portfolio, 0) = 0
-       AND p.amount > 0) AS savings_count,
-    -- Count of funded investment plans
-    (SELECT COUNT(DISTINCT p.id)
-     FROM plans_plan p
-     WHERE p.owner_id = u.id
-       AND (COALESCE(p.is_fixed_investment, 0) = 1 OR COALESCE(p.is_managed_portfolio, 0) = 1)
-       AND p.amount > 0) AS investment_count,
-    -- Total confirmed deposit amount (successful deposit transactions only)
-    COALESCE(SUM(s.confirmed_amount), 0) AS total_deposits
-FROM users_customuser u
-LEFT JOIN savings_savingsaccount s ON u.id = s.owner_id 
-    AND s.transaction_status = 'successful' 
-    AND s.transaction_type_id = 1
-    AND s.confirmed_amount > 0
-WHERE u.id IN (SELECT owner_id FROM qualified_customers)
-GROUP BY u.id, u.name
-ORDER BY total_deposits DESC;
+    cn.owner_id,
+    cn.name,
+    s.savers_saver,
+    i.investors_invest,
+    ROUND(s.savings + i.investments, 2) AS total_deposits
+FROM 
+    cust_names cn
+JOIN 
+    savers s ON cn.owner_id = s.owner_id
+JOIN 
+    investors i ON cn.owner_id = i.owner_id
+ORDER BY 
+    total_deposits DESC;
