@@ -1,14 +1,3 @@
--- Q1: Identify customers with at least one funded savings plan AND one funded investment plan
--- Approach:
--- 1. Find users with savings plans (not fixed investment or managed portfolio) and amount > 0
--- 2. Find users with investment plans (fixed investment OR managed portfolio) and amount > 0
--- 3. Get users who have both types of plans (qualified_customers)
--- 4. For those users, calculate:
---    - savings_count: number of funded savings plans
---    - investment_count: number of funded investment plans
---    - total_deposits: sum of confirmed deposit amounts from savings accounts (successful deposits only)
--- 5. Sort results by total deposits descending
-
 WITH savings_customers AS (
     SELECT DISTINCT owner_id
     FROM plans_plan
@@ -28,10 +17,9 @@ qualified_customers AS (
     FROM savings_customers s
     INNER JOIN investment_customers i ON s.owner_id = i.owner_id
 )
-
 SELECT 
     u.id AS owner_id,
-    u.name,
+    CONCAT(u.first_name, ' ', u.last_name) AS name,
     -- Count of funded savings plans
     (SELECT COUNT(DISTINCT p.id)
      FROM plans_plan p
