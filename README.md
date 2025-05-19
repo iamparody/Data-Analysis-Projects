@@ -38,7 +38,7 @@ This repository contains SQL answers to the Data Analytics Assessment. The SQL a
    - By using `GREATEST(1, ...)` we prevented division by zero to reduce dangerous run times and created stability.  
 
  Challenges and Solutions
-- Q1: The first round of queries either returned no results or timed out because of extensive joins and filters. I simplified the query by leveraging conditional aggregation, and better handling by using clearer investment/savings plan flags.
+- The first round of queries either returned no results or timed out because of extensive joins and filters. I simplified the query by leveraging conditional aggregation, and better handling by using clearer investment/savings plan flags.
 - Performance: Joining large tables made for slow queries. Used efficient indexing and filtered down faster with subqueries to improve speed.
 - Data Understanding: Required understanding of many different tables’ columns and business logic.
 - Dates: Navigating date differences, and null safety was conducted cautiously to prevent runtime errors and to ensure that tenure and inactivity were accurate calculations.
